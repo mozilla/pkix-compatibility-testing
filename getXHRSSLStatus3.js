@@ -37,12 +37,11 @@ resHandler.setSubstitution("app", mozDirURI);
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/FileUtils.jsm");
-Cu.import("resource:///modules/XPCOMUtils.jsm");
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+Cu.import("resource://gre/modules/NetUtil.jsm");
 
 
-// MONICA: edit both source and output to your liking
-
-const SOURCE = "http://people.mozilla.org/~mchew/pulse-domains-master.txt";
+const SOURCE = "test_domains.txt";
 const OUTPUT = "errorDomains_ocsp.txt";
 
 // set OCSP pref to either true or false
@@ -88,21 +87,16 @@ var errorTable = {
 
 
 function download() {
-  var req = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
-            .createInstance(Ci.nsIXMLHttpRequest);
-  req.open("GET", SOURCE, false); // doing the request synchronously
-  try {
-    req.send();
-  }
-  catch (e) {
-    throw "ERROR: problem downloading '" + SOURCE + "': " + e;
-  }
+  let file = Cc["@mozilla.org/file/directory_service;1"]
+    .getService(Components.interfaces.nsIProperties)
+    .get("CurWorkD", Components.interfaces.nsILocalFile);
+  file.append(SOURCE);
+  let stream = Cc["@mozilla.org/network/file-input-stream;1"]
+                 .createInstance(Ci.nsIFileInputStream);
+  stream.init(file, -1, 0, 0);
+  let buf = NetUtil.readInputStreamToString(stream, stream.available());
+  let masterArray = buf.split("\n");
 
-  if (req.status != 200) {
-    throw "ERROR: problem downloading '" + SOURCE + "': status " + req.status;
-  }
-
-  var masterArray = req.responseText.split("\n");
   var domainArray = [];
   var l = masterArray.length;
   for ( var i=0;i<l;i++ )
