@@ -197,7 +197,6 @@ function createTCPError(status) {
 }
 
 function analyzeSecurityInfo(xhr, error, hostname) {
-  let isEV = false;
   dump("\n" + hostname + ": ");
   if (error) {
     dump("failed: " + error.name + "(" + error.layer + ")\n");
@@ -206,8 +205,10 @@ function analyzeSecurityInfo(xhr, error, hostname) {
   }
   if (!xhr) {
     dump("\tRequest failed: no information available\n");
+    return false;
   }
 
+  let isEV = false;
   try {
     let channel = xhr.channel;
     let secInfo = channel.securityInfo;
