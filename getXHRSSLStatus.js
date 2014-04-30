@@ -5,7 +5,7 @@
 "use strict";
 
 /* === This is the stuff you might want to change === */
-const SOURCE = "alpn-domains2.txt";     // this can be an http URI if you want
+const SOURCE = "retry1.txt";     // this can be an http URI if you want
 const ERROR_OUTPUT = "error-" + SOURCE; // but then this will need to change
 const EV_OUTPUT = "ev-" + SOURCE;
 const MAX_CONCURRENT_REQUESTS = 10;
@@ -37,35 +37,9 @@ XPCOMUtils.defineLazyGetter(this, "Timer", function() {
   return timer;
 });
 
-
-let errorTable = {
-  2153390069:"SEC_ERROR_EXPIRED_CERTIFICATE",
-  2153390067:"SEC_ERROR_UNKNOWN_ISSUER",
-  2152398861:"NS_ERROR_CONNECTION_REFUSED",
-  2153394151:"SSL_ERROR_RX_RECORD_TOO_LONG",
-  2153394164:"SSL_ERROR_BAD_CERT_DOMAIN",
-  2153390060:"SEC_ERROR_UNTRUSTED_ISSUER",
-  2152398878:"NS_ERROR_UNKNOWN_HOST",
-  2153390050:"SEC_ERROR_EXPIRED_ISSUER_CERTIFICATE",
-  2152398919:"NS_ERROR_NET_INTERRUPT",
-  2153389904:"SECURITY",
-  2152398868:"NS_ERROR_NET_RESET",
-  2153389937:"SEC_ERROR_UNRECOGNIZED_OID",
-  2153390068:"SEC_ERROR_REVOKED_CERTIFICATE",
-  2153390044:"SEC_ERROR_CA_CERT_INVALID",
-  2153394070:"SSL_ERROR_UNRECOGNIZED_NAME_ALERT",
-  2147500037:"NS_ERROR_FAILURE",
-  2153389942:"SEC_ERROR_REUSED_ISSUER_AND_SERIAL",
-  2153394174:"SSL_ERROR_NO_CYPHER_OVERLAP",
-  2152398862:"NS_ERROR_NET_TIMEOUT",
-  2153389954:"SEC_ERROR_OCSP_UNKNOWN_CERT",
-  2153394076:"SSL_ERROR_INTERNAL_ERROR_ALERT",
-  2147500036:"NS_ERROR_ABORT",
-  2153394159:"SSL_ERROR_BAD_CERT_ALERT",
-  unknown: "NS_ERROR_UNEXPECTED"
-};
-
-const UNKNOWN_ERROR = "unknown";
+const nsINSSErrorsService = Ci.nsINSSErrorsService;
+let nssErrorsService = Cc['@mozilla.org/nss_errors_service;1'].getService(nsINSSErrorsService);
+const UNKNOWN_ERROR = 0x8000ffff;
 
 function readHttp() {
   let req = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
@@ -112,8 +86,6 @@ function downloadHosts() {
 function createTCPError(status) {
   let errType, errName;
   if ((status & 0xff0000) === 0x5a0000) { // Security module
-    const nsINSSErrorsService = Ci.nsINSSErrorsService;
-    let nssErrorsService = Cc['@mozilla.org/nss_errors_service;1'].getService(nsINSSErrorsService);
     let errorClass;
     // getErrorClass will throw a generic NS_ERROR_FAILURE if the error code is
     // somehow not in the set of covered errors.
@@ -221,7 +193,7 @@ function createTCPError(status) {
     dump("Error creating DOMError: " + e + "\n");
   }
 
-  return { name: 'unknown', layer: errType }; // something bad happened
+  return { name: errName, layer: errType };
 }
 
 function analyzeSecurityInfo(xhr, error, hostname) {
@@ -346,15 +318,12 @@ function queryHost(hostname, callback) {
 
 // write a single entry to the log output stream
 function writeToErrorLog(outputStream, hostname, error) {
-    let message;
-    let key = error ? error.toString(10) : UNKNOWN_ERROR;
-    if (errorTable.hasOwnProperty(key)) {
-      message = errorTable[key];
-    } else {
-      message = "UNKNOWN:" + key;
-    }
-    message = hostname + " " + message + "\n";
-    outputStream.write(message, message.length);
+  let message = "0x" + error.toString(16);
+  if ((error & 0xff0000) === 0x5a0000) { // Security module
+    message = message + " " + nssErrorsService.getErrorMessage(error);
+  }
+  message = hostname + " " + message + "\n";
+  outputStream.write(message, message.length);
 }
 
 function writeToLog(data, errorStream, evStream) {
@@ -480,6 +449,6 @@ try {
   processAllHosts(hosts, openFile(ERROR_OUTPUT), openFile(EV_OUTPUT));
   FileUtils.closeSafeFileOutputStream(fos);
 } catch (e) {
-  dump("ERROR: problem writing output to '" + OUTPUT + "': " + e + "\n");
+  dump("ERROR: problem writing output\n");
 }
 // ****************************************************************************
