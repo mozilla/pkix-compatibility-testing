@@ -5,9 +5,12 @@
 "use strict";
 
 /* === This is the stuff you might want to change === */
-const SOURCE = "retry1.txt";     // this can be an http URI if you want
-const ERROR_OUTPUT = "error-" + SOURCE; // but then this will need to change
-const EV_OUTPUT = "ev-" + SOURCE;
+if (!arguments || arguments.length < 1) {
+  throw "Usage: xpcshell getXHRSSLStatus.js <domains-file> [error-output] [ev-output]\n";
+}
+const SOURCE = arguments[0];     // this can be an http URI if you want
+const ERROR_OUTPUT = arguments[1] || ("error-" + SOURCE);
+const EV_OUTPUT = arguments[2] || ("ev-" + SOURCE);
 const MAX_CONCURRENT_REQUESTS = 10;
 const MAX_RETRIES = 0;
 const REQUEST_TIMEOUT = 10 * 1000;
@@ -332,7 +335,7 @@ function writeToLog(data, errorStream, evStream) {
     writeToErrorLog(errorStream, data.name, data.error);
   }
   if (data.ev) {
-    outputStream.write(data.name, data.name.length);
+    evStream.write(data.name, data.name.length);
   }
 }
 
@@ -395,7 +398,7 @@ function processAllHosts(hosts, errorStream, evStream) {
 
       recordResult(host.name, err, xhr);
       dump("Done/Errors/EV/Remaining: " +
-           doneCount + " / " + errorCount + " / " + evCount + "/" +
+           doneCount + " / " + errorCount + " / " + evCount + " / " +
            hosts.length + "+" + outstanding.length +
            "(" + ((outstanding.length > 0) ? outstanding[0].name : "-") + ")\n");
 
@@ -447,8 +450,11 @@ function openFile(name) {
 let hosts = downloadHosts();
 try {
   dump("Loaded " + hosts.length + " hosts\n");
-  processAllHosts(hosts, openFile(ERROR_OUTPUT), openFile(EV_OUTPUT));
-  FileUtils.closeSafeFileOutputStream(fos);
+  let errFile = openFile(ERROR_OUTPUT);
+  let evFile = openFile(EV_OUTPUT);
+  processAllHosts(hosts, errFile, evFile);
+  FileUtils.closeSafeFileOutputStream(errFile);
+  FileUtils.closeSafeFileOutputStream(evFile);
 } catch (e) {
   dump("ERROR: problem writing output\n");
 }
