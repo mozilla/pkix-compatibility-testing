@@ -1,4 +1,7 @@
 #!/bin/sh
+# Compare the output of two tests (see runforcompare.sh)
+# Collects basic stats and creates files with differences,
+# both in domains and the errors that surface.
 
 first=$1
 second=${2:-master}
