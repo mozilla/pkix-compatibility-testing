@@ -24,6 +24,5 @@ if [ -z "$branch" ]; then
     branch=$(cd "$gecko"; hg log -r tip --template "{node}\n" | cut -c 1-12 -)
 fi
 echo Running test against $(wc -l domains.txt) domains on $branch from $gecko
-exit
 exec $bin/run-mozilla.sh $bin/xpcshell getXHRSSLStatus.js domains.txt \
     domains.$branch.errors domains.$branch.ev > domains.$branch.log 2>&1
