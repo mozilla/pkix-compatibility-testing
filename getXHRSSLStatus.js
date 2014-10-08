@@ -11,7 +11,7 @@ if (!arguments || arguments.length < 1) {
 const SOURCE = arguments[0];     // this can be an http URI if you want
 const ERROR_OUTPUT = arguments[1] || ("error-" + SOURCE);
 const EV_OUTPUT = arguments[2] || ("ev-" + SOURCE);
-const MAX_CONCURRENT_REQUESTS = 10;
+const MAX_CONCURRENT_REQUESTS = 16;
 const MAX_RETRIES = 0;
 const REQUEST_TIMEOUT = 10 * 1000;
 
@@ -326,7 +326,8 @@ function writeToErrorLog(outputStream, hostname, error) {
   if ((error & 0xff0000) === 0x5a0000) { // Security module
     message = message + " " + nssErrorsService.getErrorMessage(error);
   }
-  message = hostname + " " + message + "\n";
+  message = hostname + " " + message;
+  message = message.replace("\n", "|", "g").replace("\r", "", "g") + "\n";
   outputStream.write(message, message.length);
 }
 
@@ -371,19 +372,12 @@ function processAllHosts(hosts, errorStream, evStream) {
     }
 
     let idx = outstanding.findIndex(e => e.name === hostname);
-    if (!error) { // no error, just remove from the outstanding list
-      outstanding.splice(idx, 1);
-      if (idx === 0) {
-        flushOutstanding();
-      }
-      return;
-    }
+    let entry = outstanding[idx];
+    outstanding.splice(idx, 1);
 
-    outstanding[idx].error = error;
-    outstanding[idx].ev = ev;
-    // if this is the first outstanding entry, record it...
-    // and everything following it that is done
-    flushOutstanding();
+    entry.error = error;
+    entry.ev = ev;
+    writeToLog(entry, errorStream, evStream);
   }
 
   function startNext() {
