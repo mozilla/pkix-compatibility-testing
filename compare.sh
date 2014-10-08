@@ -14,14 +14,13 @@ if ! [ -f domains.$first.errors ]; then
 fi
 
 for i in $first $second; do
-    cut -f 1 -d ' ' domains.$i.errors > domains.$i.errordomains
+    sort domains.$i.errors > domains.$i.codes
+    cut -f 1 -d ' ' domains.$i.codes > domains.$i.domains
 done
 
-for i in errors errordomains; do
-    diff -U 0 domains.$first.$i domains.$second.$i | grep -v @@ | tail -n +3 > domains.diff.$i
+for i in codes domains; do
+    diff -U 0 domains.$first.$i domains.$second.$i | grep -v @@ | tail -n +3 > domains.$first-$second.$i
 done
 
-cut -c 2- domains.diff.errordomains | uniq > domains.retry.txt
-
-echo $(wc -l domains.diff.errors) differences
-echo $(wc -l domains.diff.errordomains) differences in just domains
+echo $(wc -l domains.$first-$second.codes) differences
+echo $(wc -l domains.$first-$second.domains) differences in just domains
