@@ -1,27 +1,56 @@
 # pkix-compatibility-testing
 
-## Running the tests
-
-Edit the script to set SOURCE and EV_OUTPUT/ERROR_OUTPUT file names.  And any
-other configuration you like.
+## Running a scan
 
 Given an `xpcshell` instance, run the following:
 ```sh
 $ .../xpcshell getXHRSSLStatus.js domains.txt errors.txt ev.txt >output.txt 2>errors.txt
 ```
 
-For the full list of domains, this could take some time.  Include a shorter set
-if you need.
+For the full list of domains, this could take a long time.  Include a shorter
+set if you need.
 
-## Comparing runs from different builds
+Additional command line options determine which file any errors are logged to,
+and which file EV certificates are logged to.
 
-For testing that a change to libssl hasn't regressed anything, you can diff the
-files from runs with different builds.
+Additional tweaks can be made by editing the script.  This isn't a full-service
+operation :)
+
+## Comparing gecko builds
+
+If you have a local build of gecko in a git repository, you can use
+`runforcompare.sh` to set this up.  Simply create a `domains.txt` file and point
+the script to your gecko repository.
+
 ```sh
-$ diff -U 0 errors1.txt errors2.txt | grep -v @@ | tail +3 > changed.txt
+$ ln -s pulse-domains-master.txt domains.txt
+$ ./runforcompare.sh ../gecko-dev
 ```
 
-Or you can build a list of domains over which you can re-run the test:
+This saves files that use the branch name of your build:
+`domains.<branch>.errors` and `domains.<branch>.ev`.  This allows you to compare
+different builds easily.
+
+### Comparing runs from different builds
+
+The `compare.sh` script compares the output of two runs.  Simply pass it the
+names of the branches involved.
+
 ```sh
-$ cut -c 2- changed.txt | cut -f 1 -d ' ' | uniq >> retest.txt
+$ ./compare.sh master bug1024576
 ```
+
+This produces files including a comparison of the two named runs, including a
+list of domains that produce different error codes between the scans, and a file
+containing the domains that differ between runs.
+
+### Re-running scans
+
+Sometimes results are a little noisy, so re-running a scan over the set of
+domains that might be different is useful.
+
+The `saverun.sh` script saves the current run and builds a list of domains for
+rechecking.  This list includes all domains that produced different responses
+between all the current runs (for which there might be more than two).  The
+(hopefully shorter) list is automatically symlinked to `domains.txt` in
+preparation for the next run.
