@@ -4,12 +4,11 @@
 # both in domains and the errors that surface.
 
 first=$1
-second=${2:-master}
+second=$2
 
-if ! [ -f domains.$first.errors ]; then
+if ! [ -f domains.$first.errors -a -f domains.$second.errors ]; then
     echo "Missing file: domains.$i.errors" 1>&2
-    echo "Usage: $0 <branch1> [branch2]" 1>&2
-    echo "       branch2 defaults to master" 1>&2
+    echo "Usage: $0 <branch1> <branch2>" 1>&2
     exit 2
 fi
 
