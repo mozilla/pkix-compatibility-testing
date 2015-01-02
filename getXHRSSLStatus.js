@@ -393,7 +393,7 @@ function processAllHosts(hosts, errorStream, evStream) {
       recordResult(host.name, err, xhr);
       dump("Done/Errors/EV/Remaining: " +
            doneCount + " / " + errorCount + " / " + evCount + " / " +
-           hosts.length + "+" + outstanding.length +
+           (hosts.length-doneCount) + "+" + outstanding.length +
            "(" + ((outstanding.length > 0) ? outstanding[0].name : "-") + ")\n");
 
       startNext();
