@@ -32,7 +32,7 @@ resHandler.setSubstitution("app", mozDirURI);
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/FileUtils.jsm");
-Cu.import("resource:///modules/XPCOMUtils.jsm");
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/NetUtil.jsm");
 XPCOMUtils.defineLazyGetter(this, "Timer", function() {
   let timer = {};
@@ -355,7 +355,7 @@ function processAllHosts(hosts, errorStream, evStream) {
       writeToLog(outstanding.shift(), errorStream, evStream);
     }
   }
-
+  let counter = 0;
   let errorCount = 0;
   let evCount = 0;
   let doneCount = 0;
@@ -399,8 +399,8 @@ function processAllHosts(hosts, errorStream, evStream) {
       startNext();
     }
 
-    if (hosts.length > 0) {
-      host = { name: hosts.shift(), retries: MAX_RETRIES };
+    if (counter < hosts.length) {
+      host = { name: hosts[counter++], retries: MAX_RETRIES };
       outstanding.push(host);
       queryHost(host.name, handleResult);
     }
